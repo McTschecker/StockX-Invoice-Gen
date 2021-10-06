@@ -4,6 +4,8 @@ This Project uses the StockX Sales export(CSV file) to create the corresponding 
 
 Please feel free to open an Issue for bugs
 
+[Download](https://github.com/McTschecker/StockX-Invoice-Gen/releases/latest)
+
 ## Setup Guide
 Please follow these steps to set up this program for the first time.
 
@@ -20,7 +22,7 @@ Please follow these steps to set up this program for the first time.
 ### Configure the generator
 For more info on the settings reference the [Settings file section](#settings)
 
-1. Now download the latest verison of the generator and unzip the content.
+1. Now [download](https://github.com/McTschecker/StockX-Invoice-Gen/releases/latest) the latest verison of the generator and unzip the content.
 2. Open the `settings.json` file add the API key in the `LexofficeApiKey` field.
 
 Now we need to find the unique ID of your StockX customer. 
