@@ -17,7 +17,7 @@ Please follow these steps to set up this program for the first time.
 ![Lexoffice Public API](/images/apiKeyCreated.png)
 6. Copy the api key and save it securely. You can not see it again after closing the dialog. (Only overwrite it)
 
-###Configure the generator
+### Configure the generator
 For more info on the settings reference the [Settings file section](#settings)
 
 1. Now download the latest verison of the generator and unzip the content.
@@ -35,6 +35,12 @@ Now we need to find the unique ID of your StockX customer.
 
 # Running the application
 
+1. Get the export of your sales from StockX [here](https://stockx.com/selling).
+2. Wait for the email and then download the csv.
+3. Copy the csv to the folder with the program.
+4. Drag the csv onto the icon of the program. 
+5. A new terminal should open and the export should automatically begin.
+6. Check out the invoice on your lexoffice account
 
 
 # Settings
