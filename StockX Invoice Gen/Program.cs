@@ -121,7 +121,6 @@ namespace StockX_Invoice_Gen
             List<CSVSalesData> salesToExport = reducer.Reduce(sales);
 
             Log.Information("Beginning to export {number} sales", salesToExport.Count);
-            Log.Debug(settings.LexofficeApiKey);
 
             foreach (CSVSalesData salesData in salesToExport)
             {

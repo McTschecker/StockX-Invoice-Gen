@@ -87,7 +87,7 @@ namespace StockX_Invoice_Gen.Exports
                 payoutAdjustment.unitPrice.netAmount = (Decimal.Parse(sale.netPayout, CultureInfo.InvariantCulture) - sum).ToString(CultureInfo.InvariantCulture);
             }
 
-            LineItem[] lineItems = new LineItem[] { listPrice, saleFee, paymentFee, payoutAdjustment };
+            LineItem[] lineItems = new LineItem[] { listPrice, saleFee, paymentFee };
 
             return new InvoiceCreateRequest
             {
