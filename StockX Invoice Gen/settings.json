@@ -1,0 +1,16 @@
+{
+  "Settings": {
+    "LexofficeApiKey": "",
+    "Finalize":  false,
+    "DryRun": false
+  },
+  "lexOfficeAdress": {
+    "name": "StockX LLC",
+    "supplement": "1046 Woodward Avenue, Detroit, MI, 48226",
+    "street": "De Run 4312",
+    "zip": "5503",
+    "city": "Veldhoven",
+    "countryCode": "NL",
+    "contactId": ""
+  }
+}
