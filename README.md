@@ -1,13 +1,13 @@
-﻿#StockX Lexoffice Invoice Generator
+﻿# StockX Lexoffice Invoice Generator
 
 This Project uses the StockX Sales export(CSV file) to create the corresponding invoices in Lexoffice using their API.
 
 Please feel free to open an Issue for bugs
 
-##Setup Guide
+## Setup Guide
 Please follow these steps to set up this program for the first time.
 
-###Lexoffice API
+### Lexoffice API
 1. [Login](https://app.lexoffice.de/home?cid=lxlp) to your Lexoffice Account
 2. Now click the settings icon and go to extensions or click [here](https://app.lexoffice.de/settings/#/addons)
 3. Scroll down all the way to more apps 
