@@ -7,7 +7,7 @@ Please feel free to open an Issue for bugs
 [Download app](https://github.com/McTschecker/StockX-Invoice-Gen/releases/latest)
 
 
-[.net Runtime 5.0 (required to run](https://dotnet.microsoft.com/download/dotnet/5.0/runtime?utm_source=getdotnetcore&utm_medium=referral)
+[.net Runtime 5.0 (required to run)](https://dotnet.microsoft.com/download/dotnet/5.0/runtime?utm_source=getdotnetcore&utm_medium=referral) please download the Run console apps version
 
 ## Setup Guide
 Please follow these steps to set up this program for the first time.
