@@ -5,6 +5,7 @@ This Project uses the StockX Sales export(CSV file) to create the corresponding 
 Please feel free to open an Issue for bugs
 
 [Download](https://github.com/McTschecker/StockX-Invoice-Gen/releases/latest)
+[.net Runtime 5.0 (required to run](https://dotnet.microsoft.com/download/dotnet/5.0/runtime?utm_source=getdotnetcore&utm_medium=referral)
 
 ## Setup Guide
 Please follow these steps to set up this program for the first time.
