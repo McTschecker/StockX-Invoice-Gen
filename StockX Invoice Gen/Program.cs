@@ -33,7 +33,8 @@ namespace StockX_Invoice_Gen
                 .AddJsonFile("settings.json").Build();
 
             Log.Debug("Read config, parsing it");
-
+            
+            
             var section = config.GetSection(nameof(Settings));
             var settings = section.Get<Settings>();
             if (settings == null)
@@ -49,26 +50,10 @@ namespace StockX_Invoice_Gen
                     Log.Information("Press enter to exit");
                 }
             }
-            
-            var lexSettings = config.GetSection("lexOfficeAdress").Get<Address>();
 
-            if (lexSettings == null)
-            {
-                Log.Fatal("Lexoffice adress settings are not added, please reference https://github.com/McTschecker/StockX-Invoice-Gen to fix");
-                while (true)
-                {
-                    string str = Console.ReadLine();
-                    if (string.IsNullOrWhiteSpace(str))
-                    {
-                        return;
-                    }
-                    Log.Information("Press enter to exit");
-                }
-            }
-            
             Log.Debug("Parsed Settings");
 
-            if (!(settings.Validate()&& lexSettings.Validate()))
+            if (!(settings.Validate()))
             {
                 Log.Fatal("Settings validation failed, press enter to exit");
                 while (true)
@@ -95,7 +80,7 @@ namespace StockX_Invoice_Gen
             }
             Log.Debug("getting sales data from: {@Path}", path);
 
-            Run(path, new SaveReducer("./exported.csv"), settings, new Lexoffice(settings.LexofficeApiKey, false, lexSettings));
+            Run(path, new SaveReducer("./exported.csv"), settings, new Lexoffice(settings.LexofficeApiKey, settings.Finalize, config));
             while (true)
             {
                 string str = Console.ReadLine();

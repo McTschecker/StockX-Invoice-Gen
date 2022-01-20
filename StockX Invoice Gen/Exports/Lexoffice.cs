@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Net;
 using CsvHelper;
+using Microsoft.Extensions.Configuration;
 
 namespace StockX_Invoice_Gen.Exports
 {
@@ -16,17 +17,30 @@ namespace StockX_Invoice_Gen.Exports
         private string apiKey { get; }
         private RestClient restClient { get; }
 
-        private Address adress { get; }
-        public Lexoffice(string apiKey, bool finalize, Address ady)
+        private LexAddress adress { get; }
+        public Lexoffice(string apiKey, bool finalize, IConfigurationRoot config)
         {
             this.apiKey = apiKey;
-            this.adress = ady;
+            this.adress = config.GetSection("lexOfficeAdress").Get<LexAddress>();
+            if (this.adress == null)
+            {
+                Log.Fatal("Lexoffice adress settings are not added, please reference https://github.com/McTschecker/StockX-Invoice-Gen to fix");
+                while (true)
+                {
+                    string str = Console.ReadLine();
+                    if (string.IsNullOrWhiteSpace(str))
+                    {
+                        return;
+                    }
+                    Log.Information("Press enter to exit");
+                }
+            }
             Log.Debug("https://api.lexoffice.io/v1/invoices?finalize=" + finalize);
-            this.restClient = new RestClient("https://api.lexoffice.io/v1/invoices?finalize="+finalize);//reenable finalize ?finalize=true
+            this.restClient = new RestClient("https://api.lexoffice.io/v1/invoices?finalize="+finalize);
             Log.Information("Initialized Lexoffice");
         }
 
-        public override string createInvoice(CSVSalesData sale)
+        public override string createInvoice(UnifiedSale sale)
         {
             Log.Information("Creating invoice for {sale}", sale.orderNumber);
             Log.Debug("Formatting information for invoice");
@@ -43,51 +57,32 @@ namespace StockX_Invoice_Gen.Exports
             return response.Content;
         }
 
-        private InvoiceCreateRequest getBody(CSVSalesData sale)
+        private InvoiceCreateRequest getBody(UnifiedSale sale)
         {
-            LineItem listPrice = new LineItem { name = sale.skuName + " " + sale.size, type = "custom", discountPercentage = 0, quantity=1, unitName="Stück",
-                unitPrice=new UnitPrice {currency=sale.listCurrency, netAmount=sale.listPrice, taxRatePercentage=0 } };
+            var lineItems = new List<LineItem>();
 
-            LineItem saleFee = new LineItem
+            foreach (var lines in sale.LineItems)
             {
-                name = "Transactionfees",
-                type = "custom",
-                discountPercentage = 0,
-                quantity = 1,
-                unitName = "Stück",
-                unitPrice = new UnitPrice { currency = sale.saleFeeCurrency, netAmount = "-"+sale.saleFee, taxRatePercentage = 0 }
-            };
-
-            LineItem paymentFee = new LineItem
-            {
-                name = "Payment Fee",
-                type = "custom",
-                discountPercentage = 0,
-                quantity = 1,
-                unitName = "Stück",
-                unitPrice = new UnitPrice { currency = sale.paymentFeeCurrency, netAmount = "-"+sale.paymentFee, taxRatePercentage = 0 }
-            };
-
-            LineItem payoutAdjustment = new LineItem
-            {
-                name = "Payout adjustment",
-                type = "custom",
-                discountPercentage = 0,
-                quantity = 1,
-                unitName = "Stück",
-                unitPrice = new UnitPrice { currency = sale.paymentFeeCurrency, netAmount = "0", taxRatePercentage = 0 }
-            };
-            IFormatProvider provider = CultureInfo.CreateSpecificCulture("en-US");
-            
-            Decimal sum = Decimal.Parse(sale.listPrice, CultureInfo.InvariantCulture)
-                      - Decimal.Parse(sale.saleFee, CultureInfo.InvariantCulture)
-                      - Decimal.Parse(sale.paymentFee, CultureInfo.InvariantCulture);
-            if (sum != Decimal.Parse(sale.netPayout, CultureInfo.InvariantCulture))
-            {
-                payoutAdjustment.unitPrice.netAmount = (Decimal.Parse(sale.netPayout, CultureInfo.InvariantCulture) - sum).ToString(CultureInfo.InvariantCulture);
+                lineItems.Add(
+                    new LineItem
+                    {
+                        name = lines.Name + "\n" + lines.Description,
+                        quantity = lines.Quantity,
+                        unitName = "Stück",
+                        discountPercentage = 0,
+                        type = "custom",
+                        unitPrice = new UnitPrice()
+                        {
+                            currency = lines.currency,
+                            netAmount = lines.Price.ToString(CultureInfo.InvariantCulture),
+                            taxRatePercentage = (int)lines.Tax
+                        }
+                        
+                    }
+                    
+                    );
             }
-
-            LineItem[] lineItems = new LineItem[] { listPrice, saleFee, paymentFee };
+            
 
             return new InvoiceCreateRequest
             {
@@ -95,18 +90,18 @@ namespace StockX_Invoice_Gen.Exports
                 version = 0,
                 language = "en",
                 voucherStatus = "open",
-                address = this.adress,
-                voucherDate = FormatDate(sale.getInvoiceDate()),
-                dueDate = FormatDate(sale.getPayoutDate()),
+                lexAddress = this.adress,
+                voucherDate = FormatDate(sale.invoiceDate),
+                dueDate = FormatDate(sale.payoutDate),
                 lineItems = lineItems,
-                totalPrice = new TotalPrice { currency = sale.netPayoutCurrency, totalNetAmount = sale.totalPayout, totalGrossAmount = sale.totalPayout, totalTaxAmount = 0 },
+                totalPrice = new TotalPrice { currency = "EUR", totalNetAmount = sale.lineTotal.Price.ToString(CultureInfo.InvariantCulture), totalGrossAmount = sale.lineTotal.GrossTotalPrice.ToString(CultureInfo.InvariantCulture), totalTaxAmount = 0 },
                 taxAmounts = new TaxAmount[] { new TaxAmount { taxRatePercentage = 0, taxAmount = 0, amount = 0 } },
                 taxConditions = new TaxConditions { taxType = "intraCommunitySupply" },
                 paymentConditions = new PaymentConditions { paymentTermDuration = 1, paymentTermLabel = "instant" },
-                shippingConditions = new ShippingConditions { shippingDate = FormatDate(sale.getSaleDate()), shippingType = "delivery" },
+                shippingConditions = new ShippingConditions { shippingDate = FormatDate(sale.invoiceDate), shippingType = "delivery" },
                 title = "Invoice",
                 introduction = "Invoiced to StockX LLC, address 1046 Woodward Avenue, Detroit, MI, 48226 US, VAT ID: NL826418247B01.",
-                remark = sale.orderNumber + "\n" + sale.specialReferences
+                remark = sale.orderNumber + "\n" + sale.note
             };
         }
 
@@ -119,7 +114,7 @@ namespace StockX_Invoice_Gen.Exports
 
     }
 
-    public class Address
+    class LexAddress
     {
         public string name { get; set; }
         public string supplement { get; set; }
@@ -190,7 +185,7 @@ namespace StockX_Invoice_Gen.Exports
         public string shippingType { get; set; }
     }
 
-    public class InvoiceCreateRequest
+    class InvoiceCreateRequest
     {
         public bool archived { get; set; }
         public int version { get; set; }
@@ -199,7 +194,7 @@ namespace StockX_Invoice_Gen.Exports
         public object voucherNumber { get; set; }
         public string voucherDate { get; set; }
         public string dueDate { get; set; }
-        public Address address { get; set; }
+        public LexAddress lexAddress { get; set; }
         public IList<LineItem> lineItems { get; set; }
         public TotalPrice totalPrice { get; set; }
         public IList<TaxAmount> taxAmounts { get; set; }

@@ -1,9 +1,7 @@
 ﻿using CsvHelper.Configuration.Attributes;
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using System.Globalization;
+using Serilog;
 
 namespace StockX_Invoice_Gen.Sale
 {
@@ -215,10 +213,124 @@ namespace StockX_Invoice_Gen.Sale
 
         }
 
+        public decimal getListPrice()
+        {
+            try
+            {
+                return Decimal.Parse(listPrice, CultureInfo.InvariantCulture);
+            }
+            catch (Exception e)
+            {
+                Log.Error("Error parsing list price", e);
+                return (decimal)0.0;
+            }
+        }
+        
+        public decimal getSaleFee()
+        {
+            try
+            {
+                return Decimal.Parse(saleFee, CultureInfo.InvariantCulture);
+            }
+            catch (Exception e)
+            {
+                Log.Error("Error parsing sale fee", e);
+                return (decimal)0.0;
+            }
+        }
+        
+        public decimal getPaymentFee()
+        {
+            try
+            {
+                return Decimal.Parse(paymentFee, CultureInfo.InvariantCulture);
+            }
+            catch (Exception e)
+            {
+                Log.Error("Error parsing payment fee", e);
+                return (decimal)0.0;
+            }
+        }
+        
+        public decimal getShippingFee()
+        {
+            try
+            {
+                return Decimal.Parse(shippingFee, CultureInfo.InvariantCulture);
+            }
+            catch (Exception e)
+            {
+                Log.Error("Error parsing shipping fee", e);
+                return (decimal)0.0;
+            }
+        }
+        
+        public decimal getNetPayout()
+        {
+            try
+            {
+                return Decimal.Parse(netPayout, CultureInfo.InvariantCulture);
+            }
+            catch (Exception e)
+            {
+                Log.Error("Error parsing net Payout", e);
+                return (decimal)0.0;
+            }
+        }
+
         public static string convertToString(CSVSalesData salesData)
         {
             return salesData.ToString();
         }
+
+
+        public UnifiedSale convertToUnifiedSale(Adress sellerAdress, Adress stockxAdress)
+        {
+            var sale = new UnifiedSale(sellerAdress, stockxAdress, new LineItem[]
+            {
+                new LineItem()
+                {
+                    Name = this.skuName,
+                    Description = this.size,
+                    Quantity = 1.0m,
+                    Price = this.getListPrice(),
+                    Tax = 0.0m,
+                    currency = listCurrency
+                },
+                new LineItem()
+                {
+                    Name = "Sale Fee",
+                    Description ="",
+                    Quantity = 1.0m,
+                    Price = -this.getSaleFee(),
+                    Tax = 0.0m,
+                    currency = saleFeeCurrency
+                },
+                new LineItem()
+                {
+                    Name = "Payment Fee",
+                    Description ="",
+                    Quantity = 1.0m,
+                    Price = -this.getPaymentFee(),
+                    Tax = 0.0m,
+                    currency = paymentFeeCurrency
+                },
+                new LineItem()
+                {
+                    Name = "Shipping Fee",
+                    Description ="",
+                    Quantity = 1.0m,
+                    Price = -this.getShippingFee(),
+                    Tax = 0.0m,
+                    currency = shippingFeeCurrency
+                },
+            }, specialReferences, orderNumber);
+            //TODO check adjustment works as intended
+            sale.ensureSumWorks(getNetPayout(), "Payout Adjustment", 0.0m, getSaleDate(), getPayoutDate());
+            return sale;
+        }
+        
+        
 
     }
 }

@@ -4,8 +4,6 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using CsvHelper.Configuration;
 using Serilog;
 
@@ -33,12 +31,21 @@ namespace StockX_Invoice_Gen.Sale
                 throw new Exception("Written file does not exist");
             }
 
-            using (var reader = new StreamReader(path))
-            using (var csv = new CsvReader(reader, CultureInfo.InvariantCulture))
+            try
             {
-                var records = csv.GetRecords<T>();
-                return records.ToList();
+                using (var reader = new StreamReader(path))
+                using (var csv = new CsvReader(reader, CultureInfo.InvariantCulture))
+                {
+                    var records = csv.GetRecords<T>();
+                    return records.ToList();
+                }
             }
+            catch (Exception e)
+            {
+                Log.Error(e.Message);
+                throw;
+            }
+           
         }
 
         public static void writeCsv(string path, List<T> elements, bool append)
