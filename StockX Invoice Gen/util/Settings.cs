@@ -27,10 +27,10 @@ namespace StockX_Invoice_Gen.util
             VatID = "DE123456789"
         };
 
-        internal PdfConfig pdfInvoiceConfig { get; set; } = new()
+        public PdfConfig pdfInvoiceConfig { get; set; } = new()
         {
             currentNumber = 1,
-            prefix = "stockx",
+            prefix = "stockx-",
             suffix = "",
             title ="Invoice"
         };
@@ -54,7 +54,7 @@ namespace StockX_Invoice_Gen.util
         {
             if (InvoiceCreator == CreatorType.None)
             {
-                Log.Fatal("Please set the Invoice Creator");
+                Log.Fatal("Please set the Invoice Creator. Set 1 for Lexoffice, 2 for PDF");
                 return false;
             }
 

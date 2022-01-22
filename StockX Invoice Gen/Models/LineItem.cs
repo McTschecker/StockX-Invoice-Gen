@@ -39,8 +39,8 @@ namespace StockX_Invoice_Gen.Sale
                 {
                     quantity += item.Quantity;
                     price += item.Price;
-                    grossTotalPrice = item.Total;
-                    groupTax += item.Price * item.Tax;
+                    grossTotalPrice += item.Total;
+                    groupTax += item.Price * (1.0m +item.Tax);
                 }
                 taxSummary.Add(new TaxSummary(group.Key, groupTax));
             }
@@ -60,7 +60,9 @@ namespace StockX_Invoice_Gen.Sale
                 Name = adjustmentText,
                 Description = "",
                 Quantity = (decimal)1.0,
-                Tax = adjustmentTaxRate
+                Tax = adjustmentTaxRate,
+                currency = "EUR",
+                Price = shouldBeTotalAmount - sum
             });
 
             return lineList.ToArray();

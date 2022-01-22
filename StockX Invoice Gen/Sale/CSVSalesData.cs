@@ -243,7 +243,7 @@ namespace StockX_Invoice_Gen.Sale
             catch (Exception e)
             {
                 Log.Error("Error parsing shipping fee", e);
-                return (decimal)0.0;
+                return 0.0m;
             }
         }
 
@@ -255,7 +255,21 @@ namespace StockX_Invoice_Gen.Sale
             }
             catch (Exception e)
             {
+                //TODO try parsing gross payout
                 Log.Error("Error parsing net Payout", e);
+                return getGrossPayout();
+            }
+        }
+
+        public decimal getGrossPayout()
+        {
+            try
+            {
+                return decimal.Parse(totalPayout, CultureInfo.InvariantCulture);
+            }
+            catch (Exception e)
+            {
+                Log.Error("Error parsing gross payout", e);
                 return (decimal)0.0;
             }
         }
@@ -265,6 +279,11 @@ namespace StockX_Invoice_Gen.Sale
             return salesData.ToString();
         }
 
+        private string getCurrency(string currency)
+        {
+            if (currency.Equals("")) return "EUR";
+            return currency;
+        }
 
         public UnifiedSale convertToUnifiedSale(Adress sellerAdress, Adress stockxAdress)
         {
@@ -272,12 +291,12 @@ namespace StockX_Invoice_Gen.Sale
             {
                 new()
                 {
-                    Name = skuName,
+                    Name = $"{skuName} {size}",
                     Description = size,
                     Quantity = 1.0m,
                     Price = getListPrice(),
                     Tax = 0.0m,
-                    currency = listCurrency
+                    currency = getCurrency(listCurrency)
                 },
                 new LineItem
                 {
@@ -286,7 +305,7 @@ namespace StockX_Invoice_Gen.Sale
                     Quantity = 1.0m,
                     Price = -getSaleFee(),
                     Tax = 0.0m,
-                    currency = saleFeeCurrency
+                    currency = getCurrency(saleFeeCurrency)
                 },
                 new LineItem
                 {
@@ -295,7 +314,7 @@ namespace StockX_Invoice_Gen.Sale
                     Quantity = 1.0m,
                     Price = -getPaymentFee(),
                     Tax = 0.0m,
-                    currency = paymentFeeCurrency
+                    currency = getCurrency(paymentFeeCurrency)
                 },
                 new LineItem
                 {
@@ -304,7 +323,7 @@ namespace StockX_Invoice_Gen.Sale
                     Quantity = 1.0m,
                     Price = -getShippingFee(),
                     Tax = 0.0m,
-                    currency = shippingFeeCurrency
+                    currency = getCurrency(shippingFeeCurrency)
                 }
             }, specialReferences, orderNumber, getSaleDate(), getPayoutDate());
             //TODO check adjustment works as intended

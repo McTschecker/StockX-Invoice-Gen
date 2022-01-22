@@ -1,5 +1,7 @@
 ﻿using System.Collections.Generic;
+using System.IO;
 using System.Linq;
+using System.Text;
 using Invoicer.Models;
 using Invoicer.Services;
 using Serilog;
@@ -16,6 +18,17 @@ namespace StockX_Invoice_Gen.Exports
         {
             settings = config;
             this.config = settings.pdfInvoiceConfig;
+            
+            //Registers encoding Provider
+            Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
+            
+            // checks if folder Exports exist, if not create it
+            if (!Directory.Exists("exported"))
+            {
+                Log.Debug("Directory exported does not exist, creating it");
+                Directory.CreateDirectory("exported");
+                Log.Debug("Directory exported created");
+            }
         }
 
         private Settings settings { get; }
@@ -26,10 +39,19 @@ namespace StockX_Invoice_Gen.Exports
         public override string createInvoice(UnifiedSale sale)
         {
             Log.Information("Creating invoice for {sale}", sale.orderNumber);
-            new InvoicerApi(SizeOption.A4, OrientationOption.Landscape, "€")
-                .Reference(sale.orderNumber)
-                .Client(convertAdress(settings.customer))
-                .Company(convertAdress(settings.CompanyAddress))
+            
+            //check if folder for this sale exists, if not create it
+            if (!Directory.Exists($"exported/{sale.orderNumber}"))
+            {
+                Log.Debug("Directory for sale {sale} does not exist, creating it", sale.orderNumber);
+                Directory.CreateDirectory($"exported/{sale.orderNumber}");
+                Log.Debug("Directory for sale {sale} created", sale.orderNumber);
+            }
+            
+            new InvoicerApi(SizeOption.A4, OrientationOption.Portrait, "€")
+                .Reference($"{config.prefix}{config.currentNumber}{config.suffix}")
+                .Client(convertAdress(settings.customer, "customer"))
+                .Company(convertAdress(settings.CompanyAddress, "Billed From"))
                 .Title(config.title)
                 .DueDate(sale.payoutDate)
                 .BillingDate(sale.invoiceDate)
@@ -38,10 +60,17 @@ namespace StockX_Invoice_Gen.Exports
                     .Select(x => ItemRow.Make(x.Name, x.Description, x.Quantity, x.Tax, x.Price, x.Total)).ToList())
                 .Totals(new List<TotalRow>
                 {
-                    TotalRow.Make("Total - VAT Reverse Charge", sale.lineTotal.GrossTotalPrice)
+                    //TODO handle multiple tax rates
+                    TotalRow.Make("Total", sale.lineTotal.GrossTotalPrice)
                 })
-                .Save($"export/{sale.orderNumber}/invoice.pdf");
-            Log.Information("Wrote invoice to {File}", $"export/{sale.orderNumber}/invoice.pdf");
+                .Details(new List<DetailRow>()
+                {
+                    DetailRow.Make("Order Information: ", sale.orderNumber),
+                    DetailRow.Make("Tax Information: ", $"VAT Reverse Charge to customer VAT ID: {settings.customer.VatID}"),
+                    DetailRow.Make("Note", sale.note)
+                })
+                .Save($"exported/{sale.orderNumber}/invoice.pdf");
+            Log.Information("Wrote invoice to {File}", $"exported/{sale.orderNumber}/invoice.pdf");
 
             Log.Debug("Incrementing invoice number");
             settings.pdfInvoiceConfig.currentNumber++;
@@ -51,22 +80,23 @@ namespace StockX_Invoice_Gen.Exports
             return "Success";
         }
 
-        private static Address convertAdress(Adress c)
+        private static Address convertAdress(Adress c, string title)
         {
             return Address.Make(
-                "Company",
+                title,
                 new[]
                 {
+                    c.Name,
                     c.AdressLine1, c.AddressLine2,
                     $"{c.zip} {c.city}"
                 },
-                c.Name,
+                null,
                 c.VatID
             );
         }
     }
 
-    internal class PdfConfig
+    public class PdfConfig
     {
         public string title { get; init; }
         public string prefix { get; init; }

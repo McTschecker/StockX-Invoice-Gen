@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.Net;
 using RestSharp;
 using Serilog;
 using StockX_Invoice_Gen.Sale;
@@ -51,6 +52,7 @@ namespace StockX_Invoice_Gen.Exports
 
             var response = restClient.Execute(request);
             Log.Debug("Got response with status{Status}, body: {body}", response.StatusCode, response.Content);
+            if(response.StatusCode!=HttpStatusCode.Created)throw new Exception("Error while creating invoice");
             return response.Content;
         }
 
@@ -83,7 +85,7 @@ namespace StockX_Invoice_Gen.Exports
                 version = 0,
                 language = "en",
                 voucherStatus = "open",
-                lexAddress = adress,
+                address = adress.convertToRequestFormat(),
                 voucherDate = FormatDate(sale.invoiceDate),
                 dueDate = FormatDate(sale.payoutDate),
                 lineItems = lineItems,
@@ -118,7 +120,7 @@ namespace StockX_Invoice_Gen.Exports
         private string name => Name;
         private string supplement => AddressLine2;
         private string street => AdressLine1;
-        internal string contactId { get; set; }
+        public string contactId { get; set; }
 
         public bool Validate()
         {
@@ -126,6 +128,31 @@ namespace StockX_Invoice_Gen.Exports
                      string.IsNullOrEmpty(zip) || string.IsNullOrEmpty(city) || string.IsNullOrEmpty(countryCode) ||
                      string.IsNullOrEmpty(contactId));
         }
+
+        internal LexFormattedAdress convertToRequestFormat()
+        {
+            return new LexFormattedAdress()
+            {
+                name = name,
+                supplement = supplement,
+                street = street,
+                zip = zip,
+                city = city,
+                countryCode = countryCode,
+                contactId = contactId
+            };
+        }
+    }
+
+    public class LexFormattedAdress
+    {
+        public string name { get; set; }
+        public string supplement { get; set; }
+        public string street { get; set; }
+        public string zip { get; set; }
+        public string city { get; set; }
+        public string countryCode { get; set; }
+        public string contactId { get; set; }
     }
 
     public class UnitPrice
@@ -190,7 +217,7 @@ namespace StockX_Invoice_Gen.Exports
         public object voucherNumber { get; set; }
         public string voucherDate { get; set; }
         public string dueDate { get; set; }
-        public LexAddress lexAddress { get; set; }
+        public LexFormattedAdress address { get; set; }
         public IList<LineItem> lineItems { get; set; }
         public TotalPrice totalPrice { get; set; }
         public IList<TaxAmount> taxAmounts { get; set; }
