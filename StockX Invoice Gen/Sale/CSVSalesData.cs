@@ -255,7 +255,6 @@ namespace StockX_Invoice_Gen.Sale
             }
             catch (Exception e)
             {
-                //TODO try parsing gross payout
                 Log.Error("Error parsing net Payout", e);
                 return getGrossPayout();
             }
@@ -326,7 +325,6 @@ namespace StockX_Invoice_Gen.Sale
                     currency = getCurrency(shippingFeeCurrency)
                 }
             }, specialReferences, orderNumber, getSaleDate(), getPayoutDate());
-            //TODO check adjustment works as intended
             sale.ensureSumWorks(getNetPayout(), "Payout Adjustment", 0.0m);
             return sale;
         }
