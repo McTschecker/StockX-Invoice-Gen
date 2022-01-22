@@ -5,6 +5,6 @@ namespace StockX_Invoice_Gen.Reducer
 {
     public interface IReducer
     {
-        public abstract List<CSVSalesData> Reduce(List<CSVSalesData> input);
+        public List<CSVSalesData> Reduce(List<CSVSalesData> input);
     }
 }

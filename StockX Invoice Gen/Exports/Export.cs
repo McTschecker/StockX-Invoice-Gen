@@ -1,14 +1,10 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using StockX_Invoice_Gen.Sale;
 
 namespace StockX_Invoice_Gen.Exports
 {
-    abstract class Export
+    internal abstract class Export
     {
         public abstract string Name { get; }
-        public abstract string createInvoice(Sale.CSVSalesData sale);
+        public abstract string createInvoice(UnifiedSale sale);
     }
 }

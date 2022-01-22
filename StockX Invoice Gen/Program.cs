@@ -1,23 +1,20 @@
-﻿
-using InquirerCS;
-using StockX_Invoice_Gen.Sale;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Globalization;
+using JsonSettings.Library;
 using Serilog;
 using StockX_Invoice_Gen.Exports;
 using StockX_Invoice_Gen.Reducer;
 using StockX_Invoice_Gen.Reducer.Save;
-using Microsoft.Extensions.Configuration;
+using StockX_Invoice_Gen.Sale;
 using StockX_Invoice_Gen.util;
 
 namespace StockX_Invoice_Gen
 {
-    class Program
+    internal class Program
     {
-        static void Main(string[] args)
+        private static void Main(string[] args)
         {
-
             Log.Logger = new LoggerConfiguration()
                 .WriteTo.Console()
                 .MinimumLevel.Debug()
@@ -28,127 +25,85 @@ namespace StockX_Invoice_Gen
 
             Log.Information("Reading Config");
 
-            var config = new ConfigurationBuilder()
-                .SetBasePath(AppDomain.CurrentDomain.BaseDirectory)
-                .AddJsonFile("settings.json").Build();
+            var config = SettingsBase.Load<Settings>();
+
 
             Log.Debug("Read config, parsing it");
 
-            var section = config.GetSection(nameof(Settings));
-            var settings = section.Get<Settings>();
-            if (settings == null)
-            {
-                Log.Fatal("general settings are not added, please reference https://github.com/McTschecker/StockX-Invoice-Gen to fix");
-                while (true)
-                {
-                    string str = Console.ReadLine();
-                    if (string.IsNullOrWhiteSpace(str))
-                    {
-                        return;
-                    }
-                    Log.Information("Press enter to exit");
-                }
-            }
-            
-            var lexSettings = config.GetSection("lexOfficeAdress").Get<Address>();
 
-            if (lexSettings == null)
-            {
-                Log.Fatal("Lexoffice adress settings are not added, please reference https://github.com/McTschecker/StockX-Invoice-Gen to fix");
-                while (true)
-                {
-                    string str = Console.ReadLine();
-                    if (string.IsNullOrWhiteSpace(str))
-                    {
-                        return;
-                    }
-                    Log.Information("Press enter to exit");
-                }
-            }
-            
             Log.Debug("Parsed Settings");
 
-            if (!(settings.Validate()&& lexSettings.Validate()))
+            if (!config.Validate())
             {
-                Log.Fatal("Settings validation failed, press enter to exit");
+                config.Save();
+                Log.Fatal("Settings validation failed, press enter to exit. Wrote an updated Settings file, please fill it out and restart");
                 while (true)
                 {
-                    string str = Console.ReadLine();
+                    var str = Console.ReadLine();
                     if (string.IsNullOrWhiteSpace(str))
-                    {
                         return;
-                    }
-                    else
-                    {
-                        Log.Information("Press enter to exit");
-                    }
+                    Log.Information("Press enter to exit");
                 }
             }
-            
-            
+
+
             var path = "stockx_sales.csv";
 
-            if(args.Length == 1)
+            if (args.Length == 1)
             {
                 Log.Information("Overriden path to: {@Path}", path);
                 path = args[0];
             }
+
             Log.Debug("getting sales data from: {@Path}", path);
 
-            Run(path, new SaveReducer("./exported.csv"), settings, new Lexoffice(settings.LexofficeApiKey, false, lexSettings));
+            Run(path, new SaveReducer("./exported.csv"), config,
+                config.getExport());
             while (true)
             {
-                string str = Console.ReadLine();
+                var str = Console.ReadLine();
                 if (string.IsNullOrWhiteSpace(str))
-                {
                     return;
-                }
-                else
-                {
-                    Log.Information("Press enter to exit");
-                }
+                Log.Information("Press enter to exit");
             }
-
         }
 
-        static void Run(string path, IReducer reducer, Settings settings, Export export)
+        private static void Run(string path, IReducer reducer, Settings settings, Export export)
         {
-            List<CSVSalesData> sales = CSVLoader<CSVSalesData>.readCSV(path);
-            Log.Debug("Read Sales Data \nLatest sale is: {OrderNumber} from {date}", sales[0].orderNumber, sales[0].saleDate);
+            var sales = CSVLoader<CSVSalesData>.readCSV(path);
+            
+            if (sales.Count < 1)
+            {
+                Log.Fatal("No (new) sales found, exiting");
+                return;
+            }
+
+            Log.Debug("Read Sales Data \nLatest sale is: {OrderNumber} from {date}", sales[0].orderNumber,
+                sales[0].saleDate);
 
 
-
-            List<CSVSalesData> salesToExport = reducer.Reduce(sales);
+            var salesToExport = reducer.Reduce(sales);
 
             Log.Information("Beginning to export {number} sales", salesToExport.Count);
-            Log.Debug(settings.LexofficeApiKey);
 
-            foreach (CSVSalesData salesData in salesToExport)
+            foreach (var salesData in salesToExport)
             {
                 Log.Information("Exporting sale {sale}", salesData);
                 if (!settings.DryRun)
-                {
-                    export.createInvoice(salesData);
-                }
+                    export.createInvoice(salesData.convertToUnifiedSale(settings.CompanyAddress, settings.customer));
                 else
-                {
                     Log.Information("Running dry (not performing any export action)");
-                }
-                
-                List<CsvExported> exported = new List<CsvExported>();
-                CsvExported exportedSale = new CsvExported();
-                exportedSale.AssignValues(salesData.orderNumber, DateTime.Now.ToString("u", CultureInfo.CurrentCulture));
+
+                var exported = new List<CsvExported>();
+                var exportedSale = new CsvExported();
+                exportedSale.AssignValues(salesData.orderNumber,
+                    DateTime.Now.ToString("u", CultureInfo.CurrentCulture));
                 if (!settings.DryRun)
-                {
-                    exported.Add(exportedSale);    
-                }
+                    exported.Add(exportedSale);
                 else
-                {
                     Log.Information("Running Dry - not saving exported sales");
-                }
                 CSVLoader<CsvExported>.writeCsv("./exported.csv", exported, true);
             }
-
         }
     }
 }
