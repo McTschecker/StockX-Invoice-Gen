@@ -1,16 +1,24 @@
 {
-  "Settings": {
-    "LexofficeApiKey": "",
-    "Finalize":  false,
-    "DryRun": false
+  "LexofficeApiKey": "",
+  "Finalize": false,
+  "DryRun": false,
+  "InvoiceCreator": 2,
+  "CompanyAddress": {
+    "Name": "Company Name",
+    "AdressLine1": "Street",
+    "AddressLine2": "Address Line 2",
+    "city": "city",
+    "zip": "Zip Code",
+    "countryCode": "Two Letter Country Code e.g. DE",
+    "VatID": null
   },
-  "lexOfficeAdress": {
-    "name": "StockX LLC",
-    "supplement": "1046 Woodward Avenue, Detroit, MI, 48226",
-    "street": "De Run 4312",
-    "zip": "5503",
+  "customer": {
+    "Name": "StockX LLC",
+    "AdressLine1": "De Run 4312",
+    "AddressLine2": "1046 Woodward Avenue, Detroit, MI, 48226",
     "city": "Veldhoven",
+    "zip": null,
     "countryCode": "NL",
-    "contactId": ""
+    "VatID": "NL826418247B01"
   }
 }

@@ -1,15 +1,15 @@
-﻿using CsvHelper;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using CsvHelper;
 using CsvHelper.Configuration;
 using Serilog;
 
 namespace StockX_Invoice_Gen.Sale
 {
-    class CSVLoader<T>
+    internal class CSVLoader<T>
     {
         public CSVLoader(string path)
         {
@@ -45,7 +45,6 @@ namespace StockX_Invoice_Gen.Sale
                 Log.Error(e.Message);
                 throw;
             }
-           
         }
 
         public static void writeCsv(string path, List<T> elements, bool append)

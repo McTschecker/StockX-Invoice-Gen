@@ -7,7 +7,7 @@
         public string AddressLine2 { get; set; }
         public string city { get; set; }
         public string zip { get; set; }
-        public string CountryCode { get; set; }
+        public string countryCode { get; set; }
         public string VatID { get; set; }
     }
 }

@@ -1,59 +1,56 @@
-﻿using StockX_Invoice_Gen.Sale;
-using System;
-using Serilog;
-using RestSharp;
+﻿using System;
 using System.Collections.Generic;
 using System.Globalization;
-using System.Net;
-using CsvHelper;
-using Microsoft.Extensions.Configuration;
+using RestSharp;
+using Serilog;
+using StockX_Invoice_Gen.Sale;
 
 namespace StockX_Invoice_Gen.Exports
 {
-    class Lexoffice : Export
+    internal class Lexoffice : Export
     {
+        public Lexoffice(string apiKey, bool finalize, LexAddress adress)
+        {
+            this.apiKey = apiKey;
+            this.adress = adress;
+            if (this.adress == null)
+            {
+                Log.Fatal(
+                    "Lexoffice adress settings are not added, please reference https://github.com/McTschecker/StockX-Invoice-Gen to fix");
+                while (true)
+                {
+                    var str = Console.ReadLine();
+                    if (string.IsNullOrWhiteSpace(str)) return;
+                    Log.Information("Press enter to exit");
+                }
+            }
+
+            Log.Debug("https://api.lexoffice.io/v1/invoices?finalize=" + finalize);
+            restClient = new RestClient("https://api.lexoffice.io/v1/invoices?finalize=" + finalize);
+            Log.Information("Initialized Lexoffice");
+        }
+
         public override string Name => "Lexoffice";
 
         private string apiKey { get; }
         private RestClient restClient { get; }
 
         private LexAddress adress { get; }
-        public Lexoffice(string apiKey, bool finalize, IConfigurationRoot config)
-        {
-            this.apiKey = apiKey;
-            this.adress = config.GetSection("lexOfficeAdress").Get<LexAddress>();
-            if (this.adress == null)
-            {
-                Log.Fatal("Lexoffice adress settings are not added, please reference https://github.com/McTschecker/StockX-Invoice-Gen to fix");
-                while (true)
-                {
-                    string str = Console.ReadLine();
-                    if (string.IsNullOrWhiteSpace(str))
-                    {
-                        return;
-                    }
-                    Log.Information("Press enter to exit");
-                }
-            }
-            Log.Debug("https://api.lexoffice.io/v1/invoices?finalize=" + finalize);
-            this.restClient = new RestClient("https://api.lexoffice.io/v1/invoices?finalize="+finalize);
-            Log.Information("Initialized Lexoffice");
-        }
 
         public override string createInvoice(UnifiedSale sale)
         {
             Log.Information("Creating invoice for {sale}", sale.orderNumber);
             Log.Debug("Formatting information for invoice");
-            InvoiceCreateRequest body = getBody(sale);
+            var body = getBody(sale);
             Log.Debug("Creating Request");
             var request = new RestRequest(Method.POST);
-            request.AddHeader("Authorization", "Bearer " + this.apiKey);
+            request.AddHeader("Authorization", "Bearer " + apiKey);
             request.AddHeader("Accept", "application/json");
             request.AddHeader("Content-Type", "application/json");
             request.AddJsonBody(body);
 
-            IRestResponse response = this.restClient.Execute(request);
-            Log.Debug("Got response with status{status}, body: {body}", response.StatusCode, response.Content);
+            var response = restClient.Execute(request);
+            Log.Debug("Got response with status{Status}, body: {body}", response.StatusCode, response.Content);
             return response.Content;
         }
 
@@ -62,7 +59,6 @@ namespace StockX_Invoice_Gen.Exports
             var lineItems = new List<LineItem>();
 
             foreach (var lines in sale.LineItems)
-            {
                 lineItems.Add(
                     new LineItem
                     {
@@ -71,18 +67,15 @@ namespace StockX_Invoice_Gen.Exports
                         unitName = "Stück",
                         discountPercentage = 0,
                         type = "custom",
-                        unitPrice = new UnitPrice()
+                        unitPrice = new UnitPrice
                         {
                             currency = lines.currency,
                             netAmount = lines.Price.ToString(CultureInfo.InvariantCulture),
                             taxRatePercentage = (int)lines.Tax
                         }
-                        
                     }
-                    
-                    );
-            }
-            
+                );
+
 
             return new InvoiceCreateRequest
             {
@@ -90,17 +83,24 @@ namespace StockX_Invoice_Gen.Exports
                 version = 0,
                 language = "en",
                 voucherStatus = "open",
-                lexAddress = this.adress,
+                lexAddress = adress,
                 voucherDate = FormatDate(sale.invoiceDate),
                 dueDate = FormatDate(sale.payoutDate),
                 lineItems = lineItems,
-                totalPrice = new TotalPrice { currency = "EUR", totalNetAmount = sale.lineTotal.Price.ToString(CultureInfo.InvariantCulture), totalGrossAmount = sale.lineTotal.GrossTotalPrice.ToString(CultureInfo.InvariantCulture), totalTaxAmount = 0 },
-                taxAmounts = new TaxAmount[] { new TaxAmount { taxRatePercentage = 0, taxAmount = 0, amount = 0 } },
+                totalPrice = new TotalPrice
+                {
+                    currency = "EUR", totalNetAmount = sale.lineTotal.Price.ToString(CultureInfo.InvariantCulture),
+                    totalGrossAmount = sale.lineTotal.GrossTotalPrice.ToString(CultureInfo.InvariantCulture),
+                    totalTaxAmount = 0
+                },
+                taxAmounts = new[] { new TaxAmount() { taxRatePercentage = 0, taxAmount = 0, amount = 0 } },
                 taxConditions = new TaxConditions { taxType = "intraCommunitySupply" },
                 paymentConditions = new PaymentConditions { paymentTermDuration = 1, paymentTermLabel = "instant" },
-                shippingConditions = new ShippingConditions { shippingDate = FormatDate(sale.invoiceDate), shippingType = "delivery" },
+                shippingConditions = new ShippingConditions
+                    { shippingDate = FormatDate(sale.invoiceDate), shippingType = "delivery" },
                 title = "Invoice",
-                introduction = "Invoiced to StockX LLC, address 1046 Woodward Avenue, Detroit, MI, 48226 US, VAT ID: NL826418247B01.",
+                introduction =
+                    "Invoiced to StockX LLC, address 1046 Woodward Avenue, Detroit, MI, 48226 US, VAT ID: NL826418247B01.",
                 remark = sale.orderNumber + "\n" + sale.note
             };
         }
@@ -111,18 +111,14 @@ namespace StockX_Invoice_Gen.Exports
             if (date.Kind == DateTimeKind.Unspecified) throw new Exception("Timezone must be specified");
             return date.ToString("yyyy-MM-ddTHH:mm:ss.fffK");
         }
-
     }
 
-    class LexAddress
+    public class LexAddress : Adress
     {
-        public string name { get; set; }
-        public string supplement { get; set; }
-        public string street { get; set; }
-        public string zip { get; set; }
-        public string city { get; set; }
-        public string countryCode { get; set; }
-        public string contactId { get; set; }
+        private string name => Name;
+        private string supplement => AddressLine2;
+        private string street => AdressLine1;
+        internal string contactId { get; set; }
 
         public bool Validate()
         {
@@ -185,7 +181,7 @@ namespace StockX_Invoice_Gen.Exports
         public string shippingType { get; set; }
     }
 
-    class InvoiceCreateRequest
+    internal class InvoiceCreateRequest
     {
         public bool archived { get; set; }
         public int version { get; set; }
@@ -205,5 +201,4 @@ namespace StockX_Invoice_Gen.Exports
         public string introduction { get; set; }
         public string remark { get; set; }
     }
-
 }
