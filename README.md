@@ -9,6 +9,8 @@ Please feel free to open an Issue for bugs
 
 [.net Runtime 5.0 (required to run)](https://dotnet.microsoft.com/download/dotnet/5.0/runtime?utm_source=getdotnetcore&utm_medium=referral) please download the Run console apps version
 
+[Support Discord Server](https://discord.gg/mZJWvUkPva)
+
 ## Setup Guide
 Please follow these steps to set up this program for the first time.
 
