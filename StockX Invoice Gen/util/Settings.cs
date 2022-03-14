@@ -44,7 +44,8 @@ namespace StockX_Invoice_Gen.util
             countryCode = "NL",
             zip ="5503",
             contactId = "",
-            VatID = "NL826418247B01"
+            VatID = "NL826418247B01",
+            taxDescription = "Innergemeinschaftliche Lieferung"
         };
 
 
