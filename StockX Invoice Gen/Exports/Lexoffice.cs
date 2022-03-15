@@ -96,7 +96,7 @@ namespace StockX_Invoice_Gen.Exports
                     totalTaxAmount = 0
                 },
                 taxAmounts = new[] { new TaxAmount() { taxRatePercentage = 0, taxAmount = 0, amount = 0 } },
-                taxConditions = new TaxConditions { taxType = "intraCommunitySupply" },
+                taxConditions = new TaxConditions { taxType = "intraCommunitySupply", taxTypeNote = this.adress.taxDescription},
                 paymentConditions = new PaymentConditions { paymentTermDuration = 1, paymentTermLabel = "instant" },
                 shippingConditions = new ShippingConditions
                     { shippingDate = FormatDate(sale.invoiceDate), shippingType = "delivery" },
@@ -121,6 +121,7 @@ namespace StockX_Invoice_Gen.Exports
         private string supplement => AddressLine2;
         private string street => AdressLine1;
         public string contactId { get; set; }
+        public string taxDescription { get; set; }
 
         public bool Validate()
         {
@@ -193,6 +194,7 @@ namespace StockX_Invoice_Gen.Exports
     public class TaxConditions
     {
         public string taxType { get; set; }
+        public string taxTypeNote { get; set; }
     }
 
     public class PaymentConditions
